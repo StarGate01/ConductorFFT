@@ -81,7 +81,7 @@ while(True):
         yf = np.abs(fft.fft(fft_queue * blackmanharris(fft_len, False))[:fft_len//2])
         # Find FFT peaks and their frequencies
         peaks, _  = find_peaks(4 * yf / height, height=cv2.getTrackbarPos('FFT_tresh','webcam'))
-        freqs = xf[peaks]
+        freqs = xf[peaks] * 60.0
 
         # This function plots a line graph
         def plt(values, color):
@@ -100,7 +100,7 @@ while(True):
         # Plot FFT spectrum
         plt(height - (yf / 50), (0, 255, 0))
         # Plot into text
-        cv2.putText(frame, 'FFT max: ' + str(np.round(freqs, 2)), \
+        cv2.putText(frame, 'BPM max: ' + str(np.round(freqs, 2)), \
             (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
         # Show image buffers
