@@ -5,6 +5,7 @@ import cv2
 import time
 import collections
 import numpy.fft as fft
+import math
 from scipy.signal import blackmanharris, find_peaks
 
 
@@ -32,14 +33,16 @@ cv2.namedWindow('webcam', flags=cv2.WINDOW_GUI_NORMAL)
 cv2.resizeWindow('webcam', 800,600)
 cv2.namedWindow('process', flags=cv2.WINDOW_GUI_NORMAL)
 cv2.resizeWindow('process', 800,600)
-cv2.createTrackbar('H_min', 'process', 164, 255, nothing)
-cv2.createTrackbar('S_min', 'process', 10, 255, nothing)
-cv2.createTrackbar('V_min', 'process', 132, 255, nothing)
-cv2.createTrackbar('H_max', 'process', 174, 255, nothing)
-cv2.createTrackbar('S_max', 'process', 253, 255, nothing)
-cv2.createTrackbar('V_max', 'process', 255, 255, nothing)
+cv2.createTrackbar('H_min', 'process', 2, 255, nothing)
+cv2.createTrackbar('S_min', 'process', 36, 255, nothing)
+cv2.createTrackbar('V_min', 'process', 194, 255, nothing)
+cv2.createTrackbar('H_max', 'process', 18, 255, nothing)
+cv2.createTrackbar('S_max', 'process', 74, 255, nothing)
+cv2.createTrackbar('V_max', 'process', 246, 255, nothing)
 cv2.createTrackbar('FFT_exp', 'webcam', 8, 14, fft_change)
 cv2.createTrackbar('FFT_tresh', 'webcam', 20, 200, nothing)
+
+test = 0.0
 
 # Processing loop
 while(True):
@@ -72,7 +75,13 @@ while(True):
                 y = centroids[i, 1]
 
         # Feed Y position of blob into FFT buffer
-        fft_queue.append(y)
+        if(y <= 0):
+            fft_queue.append(fft_queue[-1])
+        else:
+            fft_queue.append(y)
+
+        # fft_queue.append(math.sin(test))
+
         # Draw center of blob
         cv2.circle(frame, (int(x), int(y)), 10, (255, 255, 0), 3) 
 
@@ -81,7 +90,7 @@ while(True):
         yf = np.abs(fft.fft(fft_queue * blackmanharris(fft_len, False))[:fft_len//2])
         # Find FFT peaks and their frequencies
         peaks, _  = find_peaks(4 * yf / height, height=cv2.getTrackbarPos('FFT_tresh','webcam'))
-        freqs = xf[peaks] * 60.0
+        freqs = xf[peaks] # * 60.0
 
         # This function plots a line graph
         def plt(values, color):
@@ -100,7 +109,7 @@ while(True):
         # Plot FFT spectrum
         plt(height - (yf / 50), (0, 255, 0))
         # Plot into text
-        cv2.putText(frame, 'BPM max: ' + str(np.round(freqs, 2)), \
+        cv2.putText(frame,  'max: ' + str(np.round(freqs, 2)), \
             (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
 
         # Show image buffers
@@ -110,6 +119,7 @@ while(True):
         # Exit on 'Q' key
         if (cv2.waitKey(1) & 0xFF) == ord('q'): break
         time.sleep(1.0 / samp_rate)
+        test += (1.0 / samp_rate)
     else:
         # Rewind video source
         cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
