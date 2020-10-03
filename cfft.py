@@ -25,7 +25,7 @@ def config_change_fac(ns, name):
     return config_change
 
 # Setup video source
-cap = cv2.VideoCapture(0) #('/home/christoph/Desktop/Probevideo_Dirigierbeispiele.webm') # (0)
+cap = cv2.VideoCapture(0)
 samp_rate = cap.get(cv2.CAP_PROP_FPS)
 
 # Setup FFT
@@ -75,22 +75,19 @@ def main(configfile):
             # Time start 
             t_start = time.time()
             # Image preprocessing - blur and convert to HSV
-            blurred = cv2.blur(frame, (8, 8))
-            inter = cv2.cvtColor(blurred, cv2.COLOR_BGR2HSV)
+            inter = cv2.cvtColor(cv2.blur(frame, (8, 8)), cv2.COLOR_BGR2HSV)
             # Color tresholding
-            lower_color = np.array([cv2.getTrackbarPos('h_min','process'), \
-                cv2.getTrackbarPos('s_min','process'), cv2.getTrackbarPos('v_min','process')], dtype=np.uint8)
-            upper_color = np.array([cv2.getTrackbarPos('h_max','process'), \
-                cv2.getTrackbarPos('s_max','process'), cv2.getTrackbarPos('v_max','process')], dtype=np.uint8)
-            mask = cv2.inRange(inter, lower_color, upper_color)
+            mask = cv2.inRange(inter, np.array([cv2.getTrackbarPos('h_min','process'), \
+                        cv2.getTrackbarPos('s_min','process'), cv2.getTrackbarPos('v_min','process')], dtype=np.uint8), 
+                    np.array([cv2.getTrackbarPos('h_max','process'), \
+                        cv2.getTrackbarPos('s_max','process'), cv2.getTrackbarPos('v_max','process')], dtype=np.uint8))
             # Patch holes and glitches
-            kernel = np.ones((8,8), np.uint8)
-            dilation =  cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+            dilation =  cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((8,8), np.uint8))
             # Find center of largest blob
             num_labels, _, stats, centroids = cv2.connectedComponentsWithStats(dilation, 4, cv2.CV_32S)
             largest_area = 0
-            x = -1
             y = -1
+            x = -1
             for i in range(1, num_labels):
                 area = stats[i, cv2.CC_STAT_AREA]
                 if(area > largest_area):
@@ -109,7 +106,7 @@ def main(configfile):
             yf = np.abs(fft.fft(fft_queue * blackmanharris(fft_len, False))[:fft_len//2])
             # Find FFT peaks and their frequencies
             peaks, _  = find_peaks(4 * yf / height, height=cv2.getTrackbarPos('fft_tresh','webcam'))
-            freqs = xf[peaks] * 60.0
+            freqs = xf[peaks] * 60.0 # Convert Hz to BPM
 
             # This function plots a line graph
             def plt(values, color):
@@ -167,8 +164,7 @@ def main(configfile):
 
             # Time end, compute delta time for constant sample rate
             t_end = time.time()
-            elapsed = t_end - t_start
-            delta = (1.0 / samp_rate) - elapsed
+            delta = (1.0 / samp_rate) - (t_end - t_start)
             if(delta < 0.0): 
                 print("WARNING: Calculation to slow for framerate")
             else:
